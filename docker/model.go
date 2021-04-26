@@ -1,6 +1,10 @@
 package docker
 
-import "github.com/docker/docker/client"
+import (
+	"context"
+
+	"github.com/docker/docker/client"
+)
 
 type Container struct {
 	ImageName string
@@ -8,6 +12,6 @@ type Container struct {
 }
 
 type Runner struct {
-	Container
+	ctx    context.Context
 	client *client.Client
 }

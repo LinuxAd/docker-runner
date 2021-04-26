@@ -1,27 +1,20 @@
 package main
 
 import (
-	"context"
-	"log"
+	"fmt"
 
 	"github.com/LinuxAd/docker-runner/docker"
+	"github.com/LinuxAd/docker-runner/runner"
 )
 
 func main() {
-
-	c, err := docker.NewRunner(
-		docker.Container{
+	svc := runner.Service{
+		Name: "test service",
+		Container: docker.Container{
 			ImageName: "nginx:latest",
 		},
-	)
-	if err != nil {
-		log.Fatal(err)
+		TargetCount: 2,
 	}
+	fmt.Println(svc)
 
-	ctx := context.Background()
-
-	err = c.Run(ctx)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
 }

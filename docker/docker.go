@@ -9,32 +9,31 @@ import (
 	"github.com/docker/docker/client"
 )
 
-func NewRunner(container Container) (*Runner, error) {
+func NewRunner(ctx context.Context) (*Runner, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	if err != nil {
 		return nil, err
 	}
-
 	c := Runner{
-		Container: container,
-		client:    cli,
+		ctx:    ctx,
+		client: cli,
 	}
 	return &c, err
 
 }
 
-func (r *Runner) createContainer(ctx context.Context) (container.ContainerCreateCreatedBody, error) {
+func (r *Runner) createContainer(ctx context.Context, cont Container) (container.ContainerCreateCreatedBody, error) {
 	resp, err := r.client.ContainerCreate(ctx, &container.Config{
-		Image: r.ImageName,
+		Image: cont.ImageName,
 		Tty:   false,
-	}, nil, nil, nil, r.ImageName+"_docker-runner-managed")
+	}, nil, nil, nil, cont.ImageName+"_docker-runner-managed")
 
 	return resp, err
 }
 
-func (r *Runner) Pull(ctx context.Context, w io.Writer) error {
+func (r *Runner) Pull(ctx context.Context, w io.Writer, cont Container) error {
 	out, err := r.client.ImagePull(
-		ctx, r.ImageName, types.ImagePullOptions{})
+		ctx, cont.ImageName, types.ImagePullOptions{})
 	if err != nil {
 		return err
 	}
@@ -43,8 +42,8 @@ func (r *Runner) Pull(ctx context.Context, w io.Writer) error {
 	return err
 }
 
-func (r *Runner) Run(ctx context.Context) error {
-	resp, err := r.createContainer(ctx)
+func (r *Runner) Run(ctx context.Context, cont Container) error {
+	resp, err := r.createContainer(ctx, cont)
 	if err != nil {
 		return err
 	}
