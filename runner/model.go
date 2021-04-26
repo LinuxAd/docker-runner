@@ -1,26 +1,25 @@
 package runner
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/LinuxAd/docker-runner/docker"
 	"github.com/sirupsen/logrus"
 )
 
 type Service struct {
-	Name        string
-	Container   docker.Container
-	TargetCount int
-	ActualCount int
+	Name        string           `json:"name"`
+	ID          int              `json:"id"`
+	Container   docker.Container `json:"container"`
+	TargetCount int              `json:"target_count"`
+	ActualCount int              `json:"actual_count"`
 }
 
 type Response struct {
-	Services []Service `json:"services,omitempty"`
+	Services []*Service `json:"services,omitempty"`
 	Error    `json:"error,omitempty"`
 }
 
@@ -30,7 +29,7 @@ type Error struct {
 }
 
 var (
-	Running []Service
+	Running []*Service
 )
 
 func writeResponse(res Response, w *http.ResponseWriter) {
@@ -59,24 +58,9 @@ func containerFromConfig(cont docker.Container) (docker.Container, error) {
 	return dock, nil
 }
 
-func (s *Service) newService(runner docker.Runner) error {
-	ctx := context.Background()
-
-	container, err := containerFromConfig(s.Container)
-	if err != nil {
-		return err
-	}
-
-	err = runner.Pull(ctx, os.Stdout, container)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func AddToServices(s Service) {
+func (s *Service) newService() error {
 	Running = append(Running, s)
+	return nil
 }
 
 func CheckRunning() {

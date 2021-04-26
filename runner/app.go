@@ -2,6 +2,7 @@ package runner
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -16,12 +17,12 @@ type GeneralErr interface {
 }
 
 type Err struct {
-	Code int
-	Msg  string
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
 }
 
 type Health struct {
-	Msg string
+	Msg string `json:"msg"`
 }
 
 type AppError struct {
@@ -57,14 +58,18 @@ func (de *DockerError) Error() string {
 	return de.Msg
 }
 
+func (a *App) Run(addr string) {
+	log.Fatal(http.ListenAndServe(":8080", a.Router))
+}
+
 func (a *App) Init() {
 	a.Router = mux.NewRouter()
+	a.initializeRoutes()
 }
 
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/healthz", a.healthz).Methods("GET")
 	a.Router.HandleFunc("/services", a.getServices).Methods("GET")
-
 }
 
 func (a *App) healthz(w http.ResponseWriter, r *http.Request) {
@@ -80,10 +85,29 @@ func (a *App) getServices(w http.ResponseWriter, r *http.Request) {
 				Body: "no services running",
 			},
 		})
+		return
 	}
 	respondWithJSON(w, http.StatusOK, Response{
 		Services: Running,
 	})
+}
+
+func (a *App) newService(w http.ResponseWriter, r *http.Request) {
+	var s Service
+	decoder := json.NewDecoder(r.Body)
+	if err := decoder.Decode(&s); err != nil {
+		respondWithError(w, http.StatusBadRequest, newAppErr("Invalid Request Paylod"))
+		return
+	}
+	defer r.Body.Close()
+
+	if err := s.newService(); err != nil {
+		respondWithError(w, http.StatusBadRequest, newAppErr("Invalid request payload"))
+	}
+}
+
+func respondWithError(w http.ResponseWriter, code int, err GeneralErr) {
+	respondWithJSON(w, code, err)
 }
 
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {

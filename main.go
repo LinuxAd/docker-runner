@@ -1,20 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"log"
 
-	"github.com/LinuxAd/docker-runner/docker"
 	"github.com/LinuxAd/docker-runner/runner"
 )
 
 func main() {
-	svc := runner.Service{
-		Name: "test service",
-		Container: docker.Container{
-			ImageName: "nginx:latest",
-		},
-		TargetCount: 2,
-	}
-	fmt.Println(svc)
-
+	log.Println("app initialising")
+	a := runner.App{}
+	a.Init()
+	log.Println("app initialised")
+	a.Run(":8080")
 }
