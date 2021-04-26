@@ -15,7 +15,6 @@ func NewRunner(ctx context.Context) (*Runner, error) {
 		return nil, err
 	}
 	c := Runner{
-		ctx:    ctx,
 		client: cli,
 	}
 	return &c, err

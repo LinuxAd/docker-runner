@@ -1,8 +1,6 @@
 package docker
 
 import (
-	"context"
-
 	"github.com/docker/docker/client"
 )
 
@@ -12,6 +10,5 @@ type Container struct {
 }
 
 type Runner struct {
-	ctx    context.Context
 	client *client.Client
 }
