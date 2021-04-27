@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 )
@@ -59,7 +60,18 @@ func (de *DockerError) Error() string {
 }
 
 func (a *App) Run(addr string) {
+	go runningTicker()
 	log.Fatal(http.ListenAndServe(":8080", a.Router))
+}
+
+func runningTicker() {
+	uptimeTicker := time.NewTicker(2 * time.Second)
+	for {
+		select {
+		case <-uptimeTicker.C:
+			go CheckRunning()
+		}
+	}
 }
 
 func (a *App) Init() {
@@ -70,6 +82,7 @@ func (a *App) Init() {
 func (a *App) initializeRoutes() {
 	a.Router.HandleFunc("/healthz", a.healthz).Methods("GET")
 	a.Router.HandleFunc("/services", a.getServices).Methods("GET")
+	a.Router.HandleFunc("/services", a.newService).Methods("POST")
 }
 
 func (a *App) healthz(w http.ResponseWriter, r *http.Request) {
@@ -78,17 +91,17 @@ func (a *App) healthz(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *App) getServices(w http.ResponseWriter, r *http.Request) {
+	var err Error
+
 	if len(Running) <= 0 {
-		respondWithJSON(w, http.StatusOK, Response{
-			Error: Error{
-				Msg:  "no services running",
-				Body: "no services running",
-			},
-		})
-		return
+		err = Error{
+			Msg:  "no services running",
+			Body: "no services running",
+		}
 	}
 	respondWithJSON(w, http.StatusOK, Response{
 		Services: Running,
+		Error:    err,
 	})
 }
 

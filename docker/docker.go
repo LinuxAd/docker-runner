@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"io"
+	"os"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -46,5 +47,11 @@ func (r *Runner) Run(ctx context.Context, cont Container) error {
 	if err != nil {
 		return err
 	}
+	w := os.Stdout
+	r.Pull(ctx, w, cont)
 	return r.client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+}
+
+func (r *Runner) CheckRunning(ctx context.Context, cont Container) ([]types.ImageSummary, error) {
+	return r.client.ImageList(ctx, types.ImageListOptions{})
 }

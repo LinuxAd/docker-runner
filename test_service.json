@@ -1,0 +1,7 @@
+{
+    "name": "test_service",
+    "container": {
+        "image_name": "nginx:latest"
+    },
+    "target_count": 5
+}

@@ -5,8 +5,8 @@ import (
 )
 
 type Container struct {
-	ImageName string
-	Command   string
+	ImageName string `json:"image_name"`
+	Command   string `json:"command,omitempty"`
 }
 
 type Runner struct {
