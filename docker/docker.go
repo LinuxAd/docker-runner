@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 	"log"
+	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -48,6 +49,20 @@ func (r *Runner) Run(ctx context.Context, cont Container) error {
 	}
 	r.Pull(ctx, cont)
 	return r.client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
+}
+
+func (r *Runner) Kill(ctx context.Context, ID string) error {
+	tout := time.Second * 2
+	log.Printf("killing container %s", ID)
+	err := r.client.ContainerStop(ctx, ID, &tout)
+	if err != nil {
+		return err
+	}
+	return r.Rm(ctx, ID)
+}
+
+func (r *Runner) Rm(ctx context.Context, ID string) error {
+	return r.client.ContainerRemove(ctx, ID, types.ContainerRemoveOptions{Force: true})
 }
 
 func (r *Runner) CheckRunning(ctx context.Context, cont Container) ([]types.ImageSummary, error) {
