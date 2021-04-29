@@ -1,7 +1,15 @@
 package main
 
-import "fmt"
+import (
+	"log"
+
+	"github.com/LinuxAd/docker-runner/runner"
+)
 
 func main() {
-	fmt.Println("main called")
+	log.Println("app initialising")
+	a := runner.App{}
+	a.Init()
+	log.Println("app initialised")
+	a.Run(":8080")
 }
