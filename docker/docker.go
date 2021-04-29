@@ -2,8 +2,7 @@ package docker
 
 import (
 	"context"
-	"io"
-	"os"
+	"log"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
@@ -23,32 +22,31 @@ func NewRunner(ctx context.Context) (*Runner, error) {
 }
 
 func (r *Runner) createContainer(ctx context.Context, cont Container) (container.ContainerCreateCreatedBody, error) {
+
 	resp, err := r.client.ContainerCreate(ctx, &container.Config{
 		Image: cont.ImageName,
 		Tty:   false,
-	}, nil, nil, nil, cont.ImageName+"_docker-runner-managed")
+	}, nil, nil, nil, cont.ContainerName)
 
 	return resp, err
 }
 
-func (r *Runner) Pull(ctx context.Context, w io.Writer, cont Container) error {
-	out, err := r.client.ImagePull(
+func (r *Runner) Pull(ctx context.Context, cont Container) error {
+	_, err := r.client.ImagePull(
 		ctx, cont.ImageName, types.ImagePullOptions{})
 	if err != nil {
 		return err
 	}
-
-	_, err = io.Copy(w, out)
 	return err
 }
 
 func (r *Runner) Run(ctx context.Context, cont Container) error {
+	log.Printf("running container '%s'", cont.ImageName)
 	resp, err := r.createContainer(ctx, cont)
 	if err != nil {
 		return err
 	}
-	w := os.Stdout
-	r.Pull(ctx, w, cont)
+	r.Pull(ctx, cont)
 	return r.client.ContainerStart(ctx, resp.ID, types.ContainerStartOptions{})
 }
 

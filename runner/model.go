@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 	"net/http"
 
 	"github.com/LinuxAd/docker-runner/docker"
@@ -64,7 +63,20 @@ func containerFromConfig(cont docker.Container) (docker.Container, error) {
 
 func (s *Service) newService() error {
 	s.ID = generateID()
+	s.Container.ContainerName = s.Container.ContainerName + "-" + s.ID
+	ctx := context.Background()
+
+	r, err := docker.NewRunner(ctx)
+	if err != nil {
+		return err
+	}
+
+	for i := 0; i <= s.TargetCount; i++ {
+		s.addContainer(ctx, *r)
+	}
+
 	Running = append(Running, s)
+
 	return nil
 }
 
@@ -73,12 +85,32 @@ func generateID() string {
 }
 
 func CheckRunning() {
-	for _, s := range Running {
+
+	for i, s := range Running {
+		ctx := context.Background()
+
+		r, err := docker.NewRunner(ctx)
+		if err != nil {
+			log.Printf("error creating docker runner: %v", err)
+		}
+
+		a, err := r.CheckRunning(ctx, s.Container)
+		if err != nil {
+			log.Printf("error checking running containers for ImageName %v: %v", s.Container.ImageName, err)
+		}
+		s.ActualCount = len(a)
+		if s.ActualCount == 0 {
+			r.Pull(ctx, s.Container)
+		}
+
 		diff := s.ActualCount - s.TargetCount
+
 		switch {
 		case diff < 0:
 			fmt.Printf("not enough running of %s, diff: %v\n", s.Name, diff)
-			s.addContainers(math.Abs(float64(diff)))
+			ctx := context.Background()
+			s.addContainer(ctx, *r)
+			Running[i].ActualCount = s.ActualCount + 1
 		case diff > 0:
 			fmt.Println("too many running!")
 		case diff == 0:
@@ -89,18 +121,11 @@ func CheckRunning() {
 	}
 }
 
-func (s *Service) addContainers(count float64) {
-	log.Printf("adding %v of %v", count, s.Container.ImageName)
-	c := int(count)
-	for i := 0; i == c; i++ {
-		ctx := context.Background()
-		r, err := docker.NewRunner(ctx)
-		if err != nil {
-			log.Println(err)
-		}
-		err = r.Run(ctx, s.Container)
-		if err != nil {
-			log.Println(err.Error())
-		}
+func (s *Service) addContainer(ctx context.Context, runner docker.Runner) {
+	c := s.Container
+	c.ContainerName = fmt.Sprintf("%v-%v", s.Container.ContainerName, s.ActualCount)
+	err := runner.Run(ctx, c)
+	if err != nil {
+		log.Println(err.Error())
 	}
 }

@@ -42,15 +42,6 @@ func newAppErr(msg string) *AppError {
 		}}
 }
 
-func newDBError(msg string) *DockerError {
-	return &DockerError{
-		Err{
-			Code: 0,
-			Msg:  msg,
-		},
-	}
-}
-
 func (ae *AppError) Error() string {
 	return ae.Msg
 }
@@ -117,6 +108,8 @@ func (a *App) newService(w http.ResponseWriter, r *http.Request) {
 	if err := s.newService(); err != nil {
 		respondWithError(w, http.StatusBadRequest, newAppErr("Invalid request payload"))
 	}
+
+	respondWithJSON(w, http.StatusOK, s)
 }
 
 func respondWithError(w http.ResponseWriter, code int, err GeneralErr) {
