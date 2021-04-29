@@ -2,16 +2,12 @@ package runner
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"sync"
 
 	"github.com/LinuxAd/docker-runner/docker"
 	uuid "github.com/satori/go.uuid"
-	"github.com/sirupsen/logrus"
 )
 
 type Service struct {
@@ -35,32 +31,6 @@ type Error struct {
 var (
 	Running []*Service
 )
-
-func writeResponse(res Response, w *http.ResponseWriter) {
-	bytes, err := json.Marshal(res)
-	if err != nil {
-		logrus.Error(err)
-		http.Error(*w, err.Error(), http.StatusInternalServerError)
-	}
-
-	fmt.Fprintf(*w, "%s\n", bytes)
-}
-
-func containerFromConfig(cont docker.Container) (docker.Container, error) {
-	dock := docker.Container{
-		ImageName: cont.ImageName,
-	}
-
-	if dock.ImageName == "" {
-		return dock, errors.New("ImageName cannot be blank")
-	}
-
-	if cont.Command != "" {
-		dock.Command = cont.Command
-	}
-
-	return dock, nil
-}
 
 func (s *Service) newService() error {
 	s.ID = generateID()
